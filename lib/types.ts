@@ -39,7 +39,6 @@ export type CanvasElement = {
   content?: string
   fieldType?: FieldType
   customFieldId?: string
-  customFieldKey?: string
   fontSize?: number
   fontWeight?: number
   fontColor?: string
@@ -127,7 +126,6 @@ export type ExcelColumn = {
   excelHeader: string
   fieldType: FieldType | null
   customFieldId?: string
-  customFieldKey?: string
 }
 
 export type GeneratedCardsBatch = {
