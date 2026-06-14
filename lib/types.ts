@@ -20,6 +20,14 @@ export type FieldType =
   | "photo"
   | "photo_no"
 
+export type CustomField = {
+  id: string
+  label: string
+  key: string
+  defaultValue?: string
+  createdAt: Date
+}
+
 export type CanvasElement = {
   id: string
   type: "text" | "image" | "shape" | "field" | "photo_box"
@@ -30,6 +38,7 @@ export type CanvasElement = {
   rotation: number
   content?: string
   fieldType?: FieldType
+  customFieldId?: string
   fontSize?: number
   fontWeight?: number
   fontColor?: string
@@ -64,6 +73,7 @@ export type StudentData = {
   photoUrl?: string
   photoStatus?: "matched" | "missing"
   hasPhotoError?: boolean
+  [key: string]: any
 }
 
 export const FIELD_LABELS: Record<FieldType, string> = {
@@ -98,6 +108,7 @@ export type StoredTemplate = {
   cardSize: CardSize
   canvasElements: CanvasElement[]
   backgroundImage?: string
+  customFields?: (CustomField & { createdAt: string })[]
   createdAt: string
   updatedAt: string
   thumbnailDataUrl?: string
@@ -114,6 +125,7 @@ export type StoredGeneratedCard = {
 export type ExcelColumn = {
   excelHeader: string
   fieldType: FieldType | null
+  customFieldId?: string
 }
 
 export type GeneratedCardsBatch = {

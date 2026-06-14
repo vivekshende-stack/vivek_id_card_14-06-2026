@@ -28,6 +28,7 @@ export function ExcelUploadStep() {
     setPhotoZipFile,
     photoMatchResults,
     setPhotoMatchResults,
+    customFields,
   } = useCardGeneratorStore()
   const [excelHeaders, setExcelHeaders] = useState<string[]>([])
   const [fileName, setFileName] = useState<string>("")
@@ -110,6 +111,12 @@ export function ExcelUploadStep() {
                 } else {
                   student[mapping.fieldType] = cellValue?.toString() || ""
                 }
+              } else if (mapping?.customFieldId) {
+                // Find custom field to get its key
+                const customField = customFields.find(f => f.id === mapping.customFieldId)
+                if (customField) {
+                  student[customField.key] = cellValue?.toString() || ""
+                }
               }
             })
             return student as StudentData
@@ -156,9 +163,9 @@ export function ExcelUploadStep() {
     }
   }
 
-  const updateMapping = (excelHeader: string, fieldType: FieldType | null) => {
+  const updateMapping = (excelHeader: string, fieldType: FieldType | null, customFieldId?: string) => {
     const updatedMappings = columnMappings.map((mapping) =>
-      mapping.excelHeader === excelHeader ? { ...mapping, fieldType } : mapping,
+      mapping.excelHeader === excelHeader ? { ...mapping, fieldType, customFieldId } : mapping,
     )
     setColumnMappings(updatedMappings)
   }
@@ -333,10 +340,16 @@ export function ExcelUploadStep() {
                   </div>
                   <div className="flex-1">
                     <Select
-                      value={mapping.fieldType || "none"}
-                      onValueChange={(value) =>
-                        updateMapping(mapping.excelHeader, value === "none" ? null : (value as FieldType))
-                      }
+                      value={mapping.customFieldId || mapping.fieldType || "none"}
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          updateMapping(mapping.excelHeader, null, undefined)
+                        } else if (customFields.some(f => f.id === value)) {
+                          updateMapping(mapping.excelHeader, null, value)
+                        } else {
+                          updateMapping(mapping.excelHeader, value as FieldType, undefined)
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select field" />
@@ -348,6 +361,19 @@ export function ExcelUploadStep() {
                             {FIELD_LABELS[fieldType]}
                           </SelectItem>
                         ))}
+                        {customFields.length > 0 && (
+                          <>
+                            <div className="relative flex items-center px-2 py-1.5 text-xs font-medium text-muted-foreground pointer-events-none">
+                              <div className="absolute inset-y-0 left-0 flex items-center" />
+                              Custom Fields
+                            </div>
+                            {customFields.map((field) => (
+                              <SelectItem key={field.id} value={field.id}>
+                                {field.label}
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

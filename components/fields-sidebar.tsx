@@ -4,11 +4,60 @@ import { useCardGeneratorStore } from "@/lib/card-generator-store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FIELD_LABELS, FIELD_PLACEHOLDERS, type FieldType } from "@/lib/types"
-import { Plus, Type, ImageIcon, Square } from "lucide-react"
+import { Plus, Type, ImageIcon, Square, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
+import { useState } from "react"
 
 export function FieldsSidebar() {
-  const { addCanvasElement, selectedCardSize } = useCardGeneratorStore()
+  const { addCanvasElement, selectedCardSize, customFields, addCustomField, removeCustomField } = useCardGeneratorStore()
+  const [newFieldLabel, setNewFieldLabel] = useState("")
+  const [newFieldKey, setNewFieldKey] = useState("")
+
+  const generateKey = (label: string) => {
+    return label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")
+  }
+
+  const handleAddCustomField = () => {
+    if (!newFieldLabel.trim()) return
+
+    const key = newFieldKey.trim() || generateKey(newFieldLabel)
+    
+    // Check for duplicate keys
+    if (customFields.some(f => f.key === key)) {
+      alert("A field with this key already exists")
+      return
+    }
+
+    addCustomField({
+      id: `custom-field-${Date.now()}`,
+      label: newFieldLabel,
+      key,
+      createdAt: new Date(),
+    })
+
+    setNewFieldLabel("")
+    setNewFieldKey("")
+  }
+
+  const addCustomFieldToCanvas = (fieldId: string, label: string, key: string) => {
+    addCanvasElement({
+      id: `field-${Date.now()}`,
+      type: "field",
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 30,
+      rotation: 0,
+      customFieldId: fieldId,
+      fieldPlaceholder: `{{${key}}}`,
+      fontSize: 16,
+      fontWeight: 400,
+      fontColor: "#000000",
+      fontFamily: "Arial",
+      textAlign: "left",
+    })
+  }
 
   const addField = (fieldType: FieldType) => {
     addCanvasElement({
@@ -95,6 +144,71 @@ export function FieldsSidebar() {
       <CardContent>
         <ScrollArea className="h-[600px] pr-4">
           <div className="space-y-6">
+            {/* Create Custom Field */}
+            <div className="space-y-3 pb-4 border-b">
+              <h4 className="text-sm font-medium text-foreground">Create Custom Field</h4>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Field label"
+                  value={newFieldLabel}
+                  onChange={(e) => setNewFieldLabel(e.target.value)}
+                  className="text-xs h-8"
+                  onKeyPress={(e) => e.key === "Enter" && handleAddCustomField()}
+                />
+                <Input
+                  placeholder="Variable key (auto-generated)"
+                  value={newFieldKey}
+                  onChange={(e) => setNewFieldKey(e.target.value)}
+                  className="text-xs h-8"
+                  onKeyPress={(e) => e.key === "Enter" && handleAddCustomField()}
+                />
+                <Button
+                  size="sm"
+                  className="w-full text-xs h-8"
+                  onClick={handleAddCustomField}
+                  disabled={!newFieldLabel.trim()}
+                >
+                  <Plus className="h-3 w-3 mr-2" />
+                  Create Field
+                </Button>
+              </div>
+            </div>
+
+            {/* Custom Fields List */}
+            {customFields.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground">Your Custom Fields</h4>
+                <div className="space-y-2">
+                  {customFields.map((field) => (
+                    <div key={field.id} className="flex items-center justify-between gap-2 p-2 rounded border bg-secondary/50">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-foreground truncate">{field.label}</div>
+                        <div className="text-[10px] text-muted-foreground font-mono">{`{{${field.key}}}`}</div>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => addCustomFieldToCanvas(field.id, field.label, field.key)}
+                        >
+                          Add
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2"
+                          onClick={() => removeCustomField(field.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">Photo Container</h4>
               <Button

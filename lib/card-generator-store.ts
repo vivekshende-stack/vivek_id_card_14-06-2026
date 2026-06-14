@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import type { CardSize, Template, CanvasElement, ExcelColumn, StudentData, StoredTemplate } from "./types"
+import type { CardSize, Template, CanvasElement, ExcelColumn, StudentData, StoredTemplate, CustomField } from "./types"
 import {
   saveTemplateToStorage,
   getAllTemplates,
@@ -41,6 +41,13 @@ interface CardGeneratorState {
   removeCanvasElement: (id: string) => void
   backgroundImage: string | null
   setBackgroundImage: (url: string | null) => void
+  
+  // Custom Fields
+  customFields: CustomField[]
+  setCustomFields: (fields: CustomField[]) => void
+  addCustomField: (field: CustomField) => void
+  removeCustomField: (id: string) => void
+  updateCustomField: (id: string, updates: Partial<CustomField>) => void
 
   savedTemplates: StoredTemplate[]
   selectedTemplateId: string | null
@@ -97,6 +104,19 @@ export const useCardGeneratorStore = create<CardGeneratorState>((set, get) => ({
   backgroundImage: null,
   setBackgroundImage: (url) => set({ backgroundImage: url }),
 
+  // Custom Fields
+  customFields: [],
+  setCustomFields: (fields) => set({ customFields: fields }),
+  addCustomField: (field) => set((state) => ({ customFields: [...state.customFields, field] })),
+  removeCustomField: (id) =>
+    set((state) => ({
+      customFields: state.customFields.filter((f) => f.id !== id),
+    })),
+  updateCustomField: (id, updates) =>
+    set((state) => ({
+      customFields: state.customFields.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+    })),
+
   savedTemplates: [],
   selectedTemplateId: null,
 
@@ -111,10 +131,16 @@ export const useCardGeneratorStore = create<CardGeneratorState>((set, get) => ({
     if (selectedId) {
       const template = await getTemplateById(selectedId)
       if (template) {
+        const customFields = (template.customFields || []).map(f => ({
+          ...f,
+          createdAt: f.createdAt instanceof Date ? f.createdAt : new Date(f.createdAt as string),
+        }))
+        
         set({
           selectedCardSize: template.cardSize,
           canvasElements: template.canvasElements,
           backgroundImage: template.backgroundImage || null,
+          customFields,
         })
       }
     }
@@ -138,6 +164,10 @@ export const useCardGeneratorStore = create<CardGeneratorState>((set, get) => ({
       cardSize: state.selectedCardSize,
       canvasElements: state.canvasElements,
       backgroundImage: state.backgroundImage || undefined,
+      customFields: state.customFields.map(f => ({
+        ...f,
+        createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : f.createdAt,
+      })) as any,
       createdAt: state.selectedTemplateId
         ? state.savedTemplates.find((t) => t.templateId === state.selectedTemplateId)?.createdAt || now
         : now,
@@ -167,10 +197,16 @@ export const useCardGeneratorStore = create<CardGeneratorState>((set, get) => ({
   },
 
   loadTemplate: (template) => {
+    const customFields = (template.customFields || []).map(f => ({
+      ...f,
+      createdAt: f.createdAt instanceof Date ? f.createdAt : new Date(f.createdAt as string),
+    }))
+    
     set({
       selectedCardSize: template.cardSize,
       canvasElements: template.canvasElements,
       backgroundImage: template.backgroundImage || null,
+      customFields,
       selectedTemplateId: template.templateId,
     })
     saveSelectedTemplateId(template.templateId)

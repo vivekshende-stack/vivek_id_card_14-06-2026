@@ -258,7 +258,7 @@ export function GenerateCardsStep() {
           ctx.textBaseline = "middle"
           ctx.fillText("NO PHOTO", element.width / 2, element.height / 2)
         }
-      } else if (element.type === "field" && element.fieldType) {
+      } else if (element.type === "field" && (element.fieldType || element.customFieldId)) {
         if (element.fieldType === "photo") {
           const photoUrl = studentData.photoUrl || generatePlaceholderImage(element.width, element.height)
           await new Promise<void>((resolve) => {
@@ -305,9 +305,21 @@ export function GenerateCardsStep() {
             img.src = photoUrl
           })
         } else {
-          let value = studentData[element.fieldType as keyof StudentData] || ""
-          if (element.fieldType === "photo_no") {
-            value = value ? `P-${value}` : ""
+          let value = ""
+          
+          if (element.fieldType) {
+            value = studentData[element.fieldType as keyof StudentData] || ""
+            if (element.fieldType === "photo_no") {
+              value = value ? `P-${value}` : ""
+            }
+          } else if (element.customFieldId) {
+            // For custom fields, we need to find the key from store
+            // Get store state for customFields
+            const storeCustomFields = useCardGeneratorStore.getState().customFields
+            const customField = storeCustomFields.find(f => f.id === element.customFieldId)
+            if (customField) {
+              value = studentData[customField.key] || ""
+            }
           }
 
           const fontFamily = element.fontFamily || "Arial"
