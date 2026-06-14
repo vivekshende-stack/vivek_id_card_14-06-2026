@@ -31,6 +31,7 @@ export function ExcelUploadStep() {
     customFields,
   } = useCardGeneratorStore()
   const [excelHeaders, setExcelHeaders] = useState<string[]>([])
+  const [excelRawData, setExcelRawData] = useState<string[][]>([])
   const [fileName, setFileName] = useState<string>("")
   const [zipFileName, setZipFileName] = useState<string>("")
   const [isMatchingPhotos, setIsMatchingPhotos] = useState(false)
@@ -105,6 +106,10 @@ export function ExcelUploadStep() {
 
           // Parse data rows (skip header row at index 0, since jsonData includes headers)
           const dataRows = jsonData.slice(1).filter(row => row && row.some(cell => cell !== "" && cell !== undefined && cell !== null))
+          
+          // Store raw data for re-parsing when mappings change
+          setExcelRawData(dataRows)
+          
           const studentData: StudentData[] = dataRows.map((row) => {
             const student: any = {}
             headers.forEach((header, index) => {
@@ -179,6 +184,44 @@ export function ExcelUploadStep() {
       mapping.excelHeader === excelHeader ? { ...mapping, fieldType, customFieldId } : mapping,
     )
     setColumnMappings(updatedMappings)
+    
+    // Re-parse Excel data with updated mappings
+    if (excelHeaders.length > 0 && excelRawData.length > 0) {
+      const updatedStudentData = excelRawData.map((row) => {
+        const student: any = {}
+        excelHeaders.forEach((header, index) => {
+          const mapping = updatedMappings.find((m) => m.excelHeader === header)
+          const cellValue = row[index]
+
+          if (header === "P" || header.toLowerCase() === "p") {
+            student.photoNumber = cellValue?.toString() || ""
+            student.photo_no = cellValue?.toString() || ""
+          }
+
+          if (mapping?.fieldType) {
+            if (mapping.fieldType === "dob") {
+              student[mapping.fieldType] = normalizeDOB(cellValue)
+            } else {
+              student[mapping.fieldType] = cellValue?.toString() || ""
+            }
+          } else if (mapping?.customFieldId) {
+            // Find custom field to get its key
+            const customField = customFields.find(f => f.id === mapping.customFieldId)
+            if (customField) {
+              student[customField.key] = cellValue?.toString() || ""
+            }
+          }
+        })
+        return student as StudentData
+      })
+      
+      setExcelData(updatedStudentData)
+      
+      // Update photo matching with new data if needed
+      if (photoZipFile && updatedStudentData.length > 0) {
+        performPhotoMatching(updatedStudentData, photoZipFile)
+      }
+    }
   }
 
   const canProceed = excelData.length > 0 && selectedTemplateId !== null && photoZipFile !== null
