@@ -50,6 +50,7 @@ export function FieldsSidebar() {
       height: 30,
       rotation: 0,
       customFieldId: fieldId,
+      customFieldKey: key,
       fieldPlaceholder: `{{${key}}}`,
       fontSize: 16,
       fontWeight: 400,

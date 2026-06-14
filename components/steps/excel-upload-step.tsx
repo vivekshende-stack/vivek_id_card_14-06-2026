@@ -41,6 +41,17 @@ export function ExcelUploadStep() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Validate MIME type only
+    const validExcelMimeTypes = [
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ]
+
+    if (!validExcelMimeTypes.includes(file.type)) {
+      alert("Please upload a valid Excel file (.xlsx or .xls)")
+      return
+    }
+
     setFileName(file.name)
 
     const reader = new FileReader()
@@ -88,7 +99,7 @@ export function ExcelUploadStep() {
               fieldType = "photo_no"
             }
 
-            return { excelHeader: header, fieldType }
+            return { excelHeader: header, fieldType } as ExcelColumn
           })
 
           setColumnMappings(mappings)
@@ -163,11 +174,43 @@ export function ExcelUploadStep() {
     }
   }
 
-  const updateMapping = (excelHeader: string, fieldType: FieldType | null, customFieldId?: string) => {
+  const updateMapping = (excelHeader: string, fieldType: FieldType | null, customFieldId?: string, customFieldKey?: string) => {
     const updatedMappings = columnMappings.map((mapping) =>
-      mapping.excelHeader === excelHeader ? { ...mapping, fieldType, customFieldId } : mapping,
+      mapping.excelHeader === excelHeader ? { ...mapping, fieldType, customFieldId, customFieldKey } : mapping,
     )
     setColumnMappings(updatedMappings)
+    
+    // Regenerate preview immediately after mapping change
+    if (excelData.length > 0) {
+      reParseExcelData(updatedMappings)
+    }
+  }
+
+  const reParseExcelData = (mappings: ExcelColumn[]) => {
+    if (excelHeaders.length === 0) return
+
+    const studentData: StudentData[] = excelData.map((student) => {
+      const updated: any = { ...student }
+
+      excelHeaders.forEach((header, index) => {
+        const mapping = mappings.find((m) => m.excelHeader === header)
+        const cellValue = excelData[excelHeaders.indexOf(header)]?.[header as keyof StudentData] || ""
+
+        if (mapping?.fieldType && !mapping.customFieldId) {
+          if (mapping.fieldType === "dob") {
+            updated[mapping.fieldType] = normalizeDOB(cellValue)
+          } else {
+            updated[mapping.fieldType] = cellValue
+          }
+        } else if (mapping?.customFieldId && mapping.customFieldKey) {
+          updated[mapping.customFieldKey] = cellValue
+        }
+      })
+
+      return updated as StudentData
+    })
+
+    setExcelData(studentData)
   }
 
   const canProceed = excelData.length > 0 && selectedTemplateId !== null && photoZipFile !== null
@@ -343,11 +386,14 @@ export function ExcelUploadStep() {
                       value={mapping.customFieldId || mapping.fieldType || "none"}
                       onValueChange={(value) => {
                         if (value === "none") {
-                          updateMapping(mapping.excelHeader, null, undefined)
-                        } else if (customFields.some(f => f.id === value)) {
-                          updateMapping(mapping.excelHeader, null, value)
+                          updateMapping(mapping.excelHeader, null, undefined, undefined)
                         } else {
-                          updateMapping(mapping.excelHeader, value as FieldType, undefined)
+                          const customField = customFields.find(f => f.id === value)
+                          if (customField) {
+                            updateMapping(mapping.excelHeader, null, customField.id, customField.key)
+                          } else {
+                            updateMapping(mapping.excelHeader, value as FieldType, undefined, undefined)
+                          }
                         }
                       }}
                     >

@@ -312,14 +312,9 @@ export function GenerateCardsStep() {
             if (element.fieldType === "photo_no") {
               value = value ? `P-${value}` : ""
             }
-          } else if (element.customFieldId) {
-            // For custom fields, we need to find the key from store
-            // Get store state for customFields
-            const storeCustomFields = useCardGeneratorStore.getState().customFields
-            const customField = storeCustomFields.find(f => f.id === element.customFieldId)
-            if (customField) {
-              value = studentData[customField.key] || ""
-            }
+          } else if (element.customFieldKey) {
+            // Use the stored key directly from the element
+            value = studentData[element.customFieldKey] || ""
           }
 
           const fontFamily = element.fontFamily || "Arial"
