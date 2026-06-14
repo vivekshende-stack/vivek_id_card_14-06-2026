@@ -291,6 +291,13 @@ export function PropertiesSidebar({ selectedElement, onUpdate, onDelete }: Prope
                   />
                 </div>
               )}
+
+              {selectedElement.type === "field" && selectedElement.customFieldId && (
+                <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs">
+                  <p className="text-blue-700 font-medium">Custom Field Detected</p>
+                  <p className="text-blue-600 text-[10px] mt-1">This element is linked to a custom field.</p>
+                </div>
+              )}
             </>
           )}
 

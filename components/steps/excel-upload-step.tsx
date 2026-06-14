@@ -88,7 +88,7 @@ export function ExcelUploadStep() {
               fieldType = "photo_no"
             }
 
-            return { excelHeader: header, fieldType }
+            return { excelHeader: header, fieldType, customFieldId: undefined }
           })
 
           setColumnMappings(mappings)
@@ -234,7 +234,7 @@ export function ExcelUploadStep() {
               </div>
             </div>
           )}
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileUpload} />
         </CardContent>
       </Card>
 

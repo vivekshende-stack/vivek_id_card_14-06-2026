@@ -180,6 +180,7 @@ export interface StoredTemplate {
   }
   canvasElements: any[]
   backgroundImage?: string
+  customFields?: any[]
   createdAt: string
   updatedAt: string
   thumbnailDataUrl?: string
