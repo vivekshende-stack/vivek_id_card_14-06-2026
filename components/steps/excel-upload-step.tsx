@@ -50,13 +50,23 @@ export function ExcelUploadStep() {
         const workbook = XLSX.read(data, { type: "binary" })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][]
+        
+        // Extract headers from first row
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1')
+        const headers: string[] = []
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const address = XLSX.utils.encode_col(C) + "1"
+          const cell = worksheet[address]
+          headers.push(cell ? cell.v : "")
+        }
+        
+        // Parse data rows using proper formula evaluation
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as string[][]
 
-        if (jsonData.length > 0) {
-          const headers = jsonData[0]
+        if (jsonData.length > 0 && headers.length > 0) {
           setExcelHeaders(headers)
 
-          // Auto-map columns
+          // Auto-map columns (skip header row at index 0)
           const mappings: ExcelColumn[] = headers.map((header) => {
             const normalizedHeader = header.toLowerCase().replace(/\s+/g, "_")
             let fieldType: FieldType | null = null
@@ -93,8 +103,9 @@ export function ExcelUploadStep() {
 
           setColumnMappings(mappings)
 
-          // Parse data rows
-          const studentData: StudentData[] = jsonData.slice(1).map((row) => {
+          // Parse data rows (skip header row at index 0, since jsonData includes headers)
+          const dataRows = jsonData.slice(1).filter(row => row && row.some(cell => cell !== "" && cell !== undefined && cell !== null))
+          const studentData: StudentData[] = dataRows.map((row) => {
             const student: any = {}
             headers.forEach((header, index) => {
               const mapping = mappings.find((m) => m.excelHeader === header)
