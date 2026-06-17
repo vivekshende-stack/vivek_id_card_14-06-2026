@@ -15,7 +15,7 @@ import {
   type StoredGeneratedCard,
   type StoredBatch,
 } from "@/lib/storage"
-import { normalizeDOB } from "@/lib/date-utils"
+import { normalizeDOB, formatDOBForDisplay } from "@/lib/date-utils"
 import { generatePlaceholderImage } from "@/lib/photo-utils"
 import { PhotoPreviewScreen } from "@/components/photo-preview-screen"
 import { format } from "date-fns"
@@ -311,6 +311,8 @@ export function GenerateCardsStep() {
             value = studentData[element.fieldType as keyof StudentData] || ""
             if (element.fieldType === "photo_no") {
               value = value ? `P-${value}` : ""
+            } else if (element.fieldType === "dob") {
+              value = formatDOBForDisplay(value)
             }
           } else if (element.customFieldId) {
             // For custom fields, we need to find the key from store

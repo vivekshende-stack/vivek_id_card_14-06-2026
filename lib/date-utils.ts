@@ -66,3 +66,32 @@ function formatToDDMMYYYY(date: Date): string {
   const year = date.getFullYear()
   return `${day}-${month}-${year}`
 }
+
+/**
+ * Format DOB for display as DD MMM YYYY (e.g., "04 Apr 2009")
+ * Accepts various input formats that normalizeDOB can handle
+ */
+export function formatDOBForDisplay(value: any): string {
+  if (!value) return ""
+
+  try {
+    // First normalize the DOB to DD-MM-YYYY format
+    const normalized = normalizeDOB(value)
+    if (!normalized) return ""
+
+    // Parse DD-MM-YYYY format
+    const parts = normalized.match(/^(\d{2})-(\d{2})-(\d{4})$/)
+    if (!parts) return normalized // Return as-is if we can't parse
+
+    const [, day, month, year] = parts
+    const monthIndex = parseInt(month, 10) - 1
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    
+    if (monthIndex < 0 || monthIndex > 11) return normalized // Invalid month
+    
+    return `${day} ${monthNames[monthIndex]} ${year}`
+  } catch (error) {
+    console.error("[v0] Error formatting DOB for display:", error, value)
+    return String(value)
+  }
+}
